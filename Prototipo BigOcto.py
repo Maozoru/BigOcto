@@ -8,47 +8,38 @@ class DrawingCanvas(QWidget):
         super(DrawingCanvas, self).__init__(parent)
         self.setWindowTitle("Prototipo BigOcto")
         
-        # Set fixed size for the window
         self.setFixedSize(1200, 800)
 
-        # Initial brush settings
         self.brush_color = Qt.black
         self.brush_size = 5
         self.last_point = QPoint()
         self.pen_is_down = False
         self.eraser_mode = False
 
-        # Create layout
         self.layout = QHBoxLayout(self)
 
-        # Create and add the canvas
         self.canvas = QImage(800, 800, QImage.Format_RGB888)
         self.canvas.fill(Qt.white)
         self.canvas_label = QLabel(self)
         self.canvas_label.setPixmap(QPixmap.fromImage(self.canvas))
         self.layout.addWidget(self.canvas_label, 1)
 
-        # Create a frame for controls
         self.control_frame = QFrame(self)
         self.control_frame.setFixedWidth(300)
         self.control_layout = QVBoxLayout(self.control_frame)
 
-        # Create a spacer to push controls to the right
         self.spacer = QSpacerItem(20, 40, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.control_layout.addItem(self.spacer)
 
-        # Clear button
         self.clear_btn = QPushButton("Clear", self)
         self.clear_btn.clicked.connect(self.clear_canvas)
         self.control_layout.addWidget(self.clear_btn)
 
-        # Eraser button
         self.eraser_btn = QPushButton("Eraser", self)
         self.eraser_btn.setCheckable(True)
         self.eraser_btn.toggled.connect(self.toggle_eraser)
         self.control_layout.addWidget(self.eraser_btn)
 
-        # Color Palette
         self.color_palette = ["#FCDAB9", "#F8B3A4", "#F78888", "#A26B7F", "#738089", "#A4B7B9"]
         self.color_buttons = []
         self.palette_frame = QFrame(self)
@@ -64,28 +55,24 @@ class DrawingCanvas(QWidget):
 
         self.control_layout.addWidget(self.palette_frame)
 
-        # Recent Colors
         self.recent_colors = []
         self.recent_palette_frame = QFrame(self)
         self.recent_palette_layout = QGridLayout(self.recent_palette_frame)
         self.update_recent_palette()
 
-        # Add recent colors to layout
         self.control_layout.addWidget(self.recent_palette_frame)
 
-        # Custom Color Button
         self.custom_color_btn = QPushButton("Custom Color", self)
         self.custom_color_btn.clicked.connect(self.choose_color)
         self.control_layout.addWidget(self.custom_color_btn)
 
-        # Add control frame to layout
         self.layout.addWidget(self.control_frame)
 
         self.setLayout(self.layout)
 
     def tabletEvent(self, tabletEvent):
         if tabletEvent.type() in (QTabletEvent.TabletPress, QTabletEvent.TabletMove):
-            self.brush_size = max(1, int(tabletEvent.pressure() * 50))  # Scale pressure to a brush size
+            self.brush_size = max(1, int(tabletEvent.pressure() * 50))  # Presion de la tableta
             current_point = QPoint(tabletEvent.x(), tabletEvent.y())
             if self.pen_is_down:
                 self.draw_line(self.last_point, current_point)
@@ -152,18 +139,17 @@ class DrawingCanvas(QWidget):
     def update_recent_colors(self, color):
         if color not in self.recent_colors:
             if len(self.recent_colors) >= 4:
-                self.recent_colors.pop(0)  # Remove oldest color
+                self.recent_colors.pop(0)  # Esto saca el color mas viejon
             self.recent_colors.append(color)
             self.update_recent_palette()
 
     def update_recent_palette(self):
-        # Clear existing widgets
         for i in reversed(range(self.recent_palette_layout.count())):
             widget = self.recent_palette_layout.itemAt(i).widget()
             if widget is not None:
                 widget.deleteLater()
 
-        # Add recent colors to the palette
+        # Los colorees mas recientes
         for i, color in enumerate(self.recent_colors):
             color_btn = QPushButton()
             color_btn.setStyleSheet(f"background-color: {color}; border: 1px solid black;")
