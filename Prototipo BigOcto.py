@@ -12,6 +12,7 @@ class DrawingCanvas(QWidget):
 
         self.brush_color = Qt.black
         self.brush_size = 5
+        self.brush_opacity = 1.0  # Nueva variable para opacidad
         self.last_point = QPoint()
         self.pen_is_down = False
         self.eraser_mode = False
@@ -31,15 +32,34 @@ class DrawingCanvas(QWidget):
         self.spacer = QSpacerItem(20, 40, QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.control_layout.addItem(self.spacer)
 
+        # Botón de limpiar
         self.clear_btn = QPushButton("Clear", self)
         self.clear_btn.clicked.connect(self.clear_canvas)
         self.control_layout.addWidget(self.clear_btn)
 
+        # Botón de borrador
         self.eraser_btn = QPushButton("Eraser", self)
         self.eraser_btn.setCheckable(True)
         self.eraser_btn.toggled.connect(self.toggle_eraser)
         self.control_layout.addWidget(self.eraser_btn)
 
+        # Control deslizante para ajustar el tamaño del pincel
+        self.size_slider = QSlider(Qt.Horizontal, self)
+        self.size_slider.setRange(1, 50)
+        self.size_slider.setValue(self.brush_size)
+        self.size_slider.valueChanged.connect(self.change_brush_size)
+        self.control_layout.addWidget(QLabel("Brush Size"))
+        self.control_layout.addWidget(self.size_slider)
+
+        # Control deslizante para ajustar la opacidad del pincel
+        self.opacity_slider = QSlider(Qt.Horizontal, self)
+        self.opacity_slider.setRange(1, 100)  # Opacidad del 1% al 100%
+        self.opacity_slider.setValue(int(self.brush_opacity * 100))
+        self.opacity_slider.valueChanged.connect(self.change_brush_opacity)
+        self.control_layout.addWidget(QLabel("Brush Opacity"))
+        self.control_layout.addWidget(self.opacity_slider)
+
+        # Paleta de colores
         self.color_palette = ["#FCDAB9", "#F8B3A4", "#F78888", "#A26B7F", "#738089", "#A4B7B9"]
         self.color_buttons = []
         self.palette_frame = QFrame(self)
@@ -70,9 +90,15 @@ class DrawingCanvas(QWidget):
 
         self.setLayout(self.layout)
 
+    def change_brush_size(self, value):
+        self.brush_size = value
+
+    def change_brush_opacity(self, value):
+        self.brush_opacity = value / 100.0  # Convertir el valor a un rango entre 0 y 1
+
     def tabletEvent(self, tabletEvent):
         if tabletEvent.type() in (QTabletEvent.TabletPress, QTabletEvent.TabletMove):
-            self.brush_size = max(1, int(tabletEvent.pressure() * 50))  # Presion de la tableta
+            self.brush_size = max(1, int(tabletEvent.pressure() * 50))  # Presión de la tableta
             current_point = QPoint(tabletEvent.x(), tabletEvent.y())
             if self.pen_is_down:
                 self.draw_line(self.last_point, current_point)
@@ -103,12 +129,15 @@ class DrawingCanvas(QWidget):
 
     def draw_line(self, start_point, end_point):
         painter = QPainter(self.canvas)
+        painter.setRenderHint(QPainter.Antialiasing)
+        brush_color_with_opacity = QColor(self.brush_color)
+        brush_color_with_opacity.setAlphaF(self.brush_opacity)  # Aplicar opacidad
         if self.eraser_mode:
             painter.setPen(QPen(Qt.white, self.brush_size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         else:
-            painter.setPen(QPen(self.brush_color, self.brush_size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+            painter.setPen(QPen(brush_color_with_opacity, self.brush_size, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.drawLine(start_point, end_point)
-        painter.end()  # Make sure to end the painter
+        painter.end()  # Terminar el pintor
         self.canvas_label.setPixmap(QPixmap.fromImage(self.canvas))
         self.update()
 
@@ -139,7 +168,7 @@ class DrawingCanvas(QWidget):
     def update_recent_colors(self, color):
         if color not in self.recent_colors:
             if len(self.recent_colors) >= 4:
-                self.recent_colors.pop(0)  # Esto saca el color mas viejon
+                self.recent_colors.pop(0)  # Esto saca el color más viejo
             self.recent_colors.append(color)
             self.update_recent_palette()
 
@@ -149,7 +178,7 @@ class DrawingCanvas(QWidget):
             if widget is not None:
                 widget.deleteLater()
 
-        # Los colorees mas recientes
+        # Los colores más recientes
         for i, color in enumerate(self.recent_colors):
             color_btn = QPushButton()
             color_btn.setStyleSheet(f"background-color: {color}; border: 1px solid black;")
