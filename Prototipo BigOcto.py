@@ -124,7 +124,6 @@ class DrawingCanvas(QWidget):
 
     def paintEvent(self, event):
         painter = QPainter(self)
-        painter.drawImage(0, 0, self.canvas)
 
     def mouseMoveEvent(self, event):
         if self.pen_is_down:
