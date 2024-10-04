@@ -1,8 +1,10 @@
 import sys
+
+from PyQt6.QtWidgets import QVBoxLayout, QPushButton, QWidget, QListWidget, QInputDialog
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
-from layer_manager import Capa, AdministradorCapas
+from layer_manager import Capa, AdministradorCapas 
 
 # Estilos para los temas
 tema_oscuro = """
@@ -132,10 +134,10 @@ class LienzoDeDibujo(QWidget):
         self.diseno_control.addWidget(self.boton_borrador)
 
         # Botón de relleno
-        self.boton_rellenar = QPushButton("Rellenar", self)
+        self.boton_rellenar = QPushButton("Rellenar", self )
         self.boton_rellenar.setCheckable(True)
         self.grupo_botones_herramientas.addButton(self.boton_rellenar)
-        self.diseno_control.addWidget(self.boton_rellenar)
+        self .diseno_control.addWidget(self.boton_rellenar)
 
         # Botón de pincel con submenú
         self.boton_menu_pincel = QPushButton("Pincel...", self)
@@ -320,7 +322,7 @@ class LienzoDeDibujo(QWidget):
 
     def clear_canvas(self):
         """ Limpia el lienzo actual. """
-        self.lienzo.fill(Qt.GlobalColor.transparent)
+        self.capas[self.indice_capa_actual].imagen.fill(Qt.GlobalColor.white)
         self.update_canvas()
 
     def change_theme(self, theme_name):
@@ -344,7 +346,7 @@ class LienzoDeDibujo(QWidget):
         self.modo_pixel = False  # Desactiva el modo pixel
         print("Modo Pincel Normal Activado")
 
-    def select_pixel_brush(self):
+    def select_pixel_brush(self ):
         self.modo_pixel = True  # Activa el modo pixel
         print("Modo Pincel Pixelado Activado")
 
@@ -358,7 +360,7 @@ class LienzoDeDibujo(QWidget):
         # Ajustar el tamaño del pincel según la presión del lápiz
         if event.type() in (QEvent.Type.TabletPress, QEvent.Type.TabletMove):
             self.tamaño_pincel = max(1, int(event.pressure() * 50))  # Ajusta la escala si es necesario
-            current_point = event.position().toPoint()  # Utiliza position() para obtener la posición local
+            current_point = event.position().toPoint ()  # Utiliza position() para obtener la posición local
 
             if self.pincel_abajo:
                 self.draw_line(self.ultimo_punto, current_point)
@@ -368,34 +370,6 @@ class LienzoDeDibujo(QWidget):
         elif event.type() == QEvent.Type.TabletRelease:
             self.pincel_abajo = False
             self.ultimo_punto = QPoint()
-    def draw_on_canvas(self, current_point):
-        painter = QPainter(self.lienzo)
-        painter.setPen(QPen(self.color_pincel, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        painter.setOpacity(self.opacidad_pincel)
-
-        if self.modo_borrador:
-            painter.setCompositionMode(QPainter.CompositionMode.Clear)
-
-        if self.modo_pixel:
-            # Implement the pixelated brush drawing
-            painter.drawPoint(current_point)
-        else:
-            if not self.ultimo_punto.isNull():
-                painter.drawLine(self.ultimo_punto, current_point)
-
-        self.ultimo_punto = current_point
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
-        self.update()
-
-    def tabletReleaseEvent(self, event: QTabletEvent):
-        """ Handle tablet release event to stop drawing. """
-        self.pincel_abajo = False
-        self.ultimo_punto = QPoint()  # Reset last point when the pen is lifted
-
-    def tabletPressEvent(self, event: QTabletEvent):
-        """ Handle tablet press event to start drawing. """
-        self.pincel_abajo = True
-        self.ultimo_punto = event.position().toPoint()  # Set the last point to the current position
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -420,30 +394,8 @@ class LienzoDeDibujo(QWidget):
         self.pincel_abajo = False
         self.ultimo_punto = QPoint()
 
-    def update_canvas(self):
-        """ Actualiza la visualización del lienzo con todas las capas. """
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
-        lienzo_completo.fill(Qt.GlobalColor.transparent)
-
-        # Dibujar todas las capas visibles
-        for capa in self.capas:
-            lienzo_completo = self.combinar_imagenes(lienzo_completo, capa.imagen)
-
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
-
-    def combinar_imagenes(self, imagen1, imagen2):
-        """ Combina dos imágenes QImage respetando la transparencia. """
-        pixmap1 = QPixmap.fromImage(imagen1)
-        pixmap2 = QPixmap.fromImage(imagen2)
-
-        painter = QPainter(pixmap1)
-        painter.drawPixmap(0, 0, pixmap2)
-        painter.end()
-
-        return pixmap1.toImage()
-
     def draw_line(self, start_point, end_point):
-        painter = QPainter(self.lienzo)
+        painter = QPainter(self.capas[self.indice_capa_actual].imagen)
 
         # Configura el color y la opacidad del pincel
         brush_color_with_opacity = QColor(self.color_pincel)
@@ -467,12 +419,12 @@ class LienzoDeDibujo(QWidget):
         painter.end()
 
         # Actualiza el lienzo
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
         self.update()
 
     def clear_canvas(self):
-        self.lienzo.fill(Qt.GlobalColor.white)
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
+        self.capas[self.indice_capa_actual].imagen.fill(Qt.GlobalColor.white)
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
         self.update()
 
     def toggle_eraser(self, checked):
@@ -498,7 +450,7 @@ class LienzoDeDibujo(QWidget):
 
     def update_recent_colors(self, color):
         if color not in self.colores_recientes:
-            if len(self.colores_recientes) >= 4:
+            if len(self .colores_recientes) >= 4:
                 self.colores_recientes.pop(0)
             self.colores_recientes.append(color)
             self.update_recent_palette()
@@ -522,17 +474,17 @@ class LienzoDeDibujo(QWidget):
         self.tolerancia = value
 
     def fill_canvas(self, start_pos, fill_color):
-        target_color = QColor(self.lienzo.pixel(start_pos))
+        target_color = QColor(self.capas[self.indice_capa_actual].imagen.pixel(start_pos))
         if target_color != fill_color:
             self.flood_fill(start_pos, fill_color)
-            self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
+            self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
             self.update()
 
     def flood_fill(self, start, fill_color):
-        width = self.lienzo.width()
-        height = self.lienzo.height()
+        width = self.capas[self.indice_capa_actual].imagen.width()
+        height = self.capas[self.indice_capa_actual].imagen.height()
 
-        target_color = QColor(self.lienzo.pixel(start.x(), start.y()))
+        target_color = QColor(self.capas[self.indice_capa_actual].imagen.pixel(start.x(), start.y()))
 
         if self.is_similar_color(target_color, fill_color):
             return
@@ -546,20 +498,70 @@ class LienzoDeDibujo(QWidget):
             if x < 0 or x >= width or y < 0 or y >= height:
                 continue
 
-            current_color = QColor(self.lienzo.pixel(x, y))
+            current_color = QColor(self.capas[self.indice_capa_actual].imagen.pixel(x, y))
             if not self.is_similar_color(current_color, target_color):
                 continue
 
-            self.lienzo.setPixelColor(x, y, fill_color)
+            self.capas[self.indice_capa_actual].imagen.setPixelColor(x, y, fill_color)
             stack.extend([QPoint(x + 1, y), QPoint(x - 1, y), QPoint(x, y + 1), QPoint(x, y - 1)])
 
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
         self.update()
 
     def is_similar_color(self, color1, color2):
         return (abs(color1.red() - color2.red()) <= self.tolerancia and
                 abs(color1.green() - color2.green()) <= self.tolerancia and
                 abs(color1.blue() - color2.blue()) <= self.tolerancia)
+
+    def update_canvas(self):
+        """ Actualiza la visualización del lienzo con todas las capas. """
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo.fill(Qt.GlobalColor.transparent)
+
+        # Dibujar todas las capas visibles
+        for capa in self.capas:
+            lienzo_completo = self.combinar_imagenes(lienzo_completo, capa.imagen)
+
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
+
+    def combinar_imagenes(self, imagen1, imagen2):
+        """ Combina dos imágenes QImage respetando la transparencia. """
+        pixmap1 = QPixmap.fromImage(imagen1)
+        pixmap2 = QPixmap.fromImage(imagen2)
+
+        painter = QPainter(pixmap1)
+        painter.drawPixmap(0, 0, pixmap2)
+        painter.end()
+
+        return pixmap1.toImage()
+
+    def dibujar_linea(self, punto_inicial, punto_final):
+        """ Dibuja una línea desde el punto inicial al punto final en la capa actual. """
+        painter = QPainter(self.capas[self.indice_capa_actual].imagen)
+        painter.setPen(QPen(self.color_pincel if not self.modo_borrador else Qt.GlobalColor.white,
+                            self.tamaño_pincel, Qt.PenStyle.SolidLine,
+                            Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.drawLine(punto_inicial, punto_final)
+        painter.end()
+
+        self.update_canvas()
+
+    def mousePressEvent(self, event):
+        """ Evento que maneja cuando se presiona el mouse. """
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.pincel_abajo = True
+            self.ultimo_punto = event.position().toPoint()
+
+    def mouseMoveEvent(self, event):
+        """ Evento que maneja cuando el mouse se mueve. """
+        if self.pincel_abajo and not self.seleccion_activa:
+            self.dibujar_linea(self.ultimo_punto, event.position().toPoint())
+            self.ultimo_punto = event.position().toPoint()
+
+    def mouseReleaseEvent(self, event):
+        """ Evento que maneja cuando se suelta el mouse. """
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.pincel_abajo = False
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

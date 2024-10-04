@@ -2,56 +2,9 @@ import sys
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
-from layer_manager import Capa, AdministradorCapas
-
-# Estilos para los temas
-tema_oscuro = """
-    QWidget {
-        background-color: #2e2e2e;
-        color: #ffffff;
-    }
-    QPushButton {
-        background-color: #4e4e4e;
-        color: #ffffff;
-        border: none;
-        padding: 10px;
-    }
-    QPushButton:hover {
-        background-color: #6e6e6e;
-    }
-"""
-
-tema_claro = """
-    QWidget {
-        background-color: #f0f0f0;
-        color: #000000;
-    }
-    QPushButton {
-        background-color: #e0e0e0;
-        color: #000000;
-        border: none;
-        padding: 10px;
-    }
-    QPushButton:hover {
-        background-color: #c0c0c0;
-    }
-"""
-
-tema_rosa = """
-    QWidget {
-        background-color: #ffc0cb;
-        color: #000000;
-    }
-    QPushButton {
-        background-color: #ffb6c1;
-        color: #000000;
-        border: none;
-        padding: 10px;
-    }
-    QPushButton:hover {
-        background-color: #ff69b4;
-    }
-"""
+from capa import Capa
+from administrador_capas import AdministradorCapas
+from estilos import tema_oscuro, tema_claro, tema_rosa
 
 class LienzoDeDibujo(QWidget):
     def __init__(self, parent=None):
@@ -560,9 +513,3 @@ class LienzoDeDibujo(QWidget):
         return (abs(color1.red() - color2.red()) <= self.tolerancia and
                 abs(color1.green() - color2.green()) <= self.tolerancia and
                 abs(color1.blue() - color2.blue()) <= self.tolerancia)
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    lienzo = LienzoDeDibujo()
-    lienzo.show()
-    sys.exit(app.exec())
