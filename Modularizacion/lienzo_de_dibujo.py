@@ -4,14 +4,15 @@ from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
 from capa import Capa
 from administrador_capas import AdministradorCapas
-from estilos import tema_oscuro, tema_claro, tema_rosa
+from estilos import *
+from pincelesextras import *
 
 class LienzoDeDibujo(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Prototipo BigOcto")
         self.setFixedSize(1200, 800)
-
+    
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black
         self.tamaño_pincel = 5
@@ -21,6 +22,7 @@ class LienzoDeDibujo(QWidget):
         self.modo_borrador = False
         self.seleccion_activa = False  # Estado de la selección
         self.modo_pixel = False  # Modo del pincel: False = Normal, True = Pixelado
+        self.show_grid = False  # Estado de la cuadrícula
 
         # Layout principal
         self.diseno_principal = QHBoxLayout(self)
@@ -249,6 +251,10 @@ class LienzoDeDibujo(QWidget):
     def toleranciadelrelleno(self, value):
         self.tolerancia = value
 
+    def toggle_grid(self):
+        self.show_grid = not self.show_grid
+        self.update()  # Redibuja el lienzo
+
     def set_color(self, color):
         self.color_pincel = QColor(color)
         if color not in self.colores_recientes:
@@ -321,17 +327,18 @@ class LienzoDeDibujo(QWidget):
         elif event.type() == QEvent.Type.TabletRelease:
             self.pincel_abajo = False
             self.ultimo_punto = QPoint()
+
     def draw_on_canvas(self, current_point):
         painter = QPainter(self.lienzo)
-        painter.setPen(QPen(self.color_pincel, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
+        painter.setPen(QPen(self.color_pincel, self.tamaño_pincel, Qt.PenStyle.SolidLine, 
+                            Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         painter.setOpacity(self.opacidad_pincel)
 
         if self.modo_borrador:
             painter.setCompositionMode(QPainter.CompositionMode.Clear)
 
         if self.modo_pixel:
-            # Implement the pixelated brush drawing
-            painter.drawPoint(current_point)
+            painter.drawPoint(current_point)  # Implement the pixelated brush drawing
         else:
             if not self.ultimo_punto.isNull():
                 painter.drawLine(self.ultimo_punto, current_point)
@@ -339,11 +346,10 @@ class LienzoDeDibujo(QWidget):
         self.ultimo_punto = current_point
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
         self.update()
-
+            
     def tabletReleaseEvent(self, event: QTabletEvent):
-        """ Handle tablet release event to stop drawing. """
         self.pincel_abajo = False
-        self.ultimo_punto = QPoint()  # Reset last point when the pen is lifted
+        self.ultimo_punto = QPoint()  # Reset the last point when the pencil is lifted
 
     def tabletPressEvent(self, event: QTabletEvent):
         """ Handle tablet press event to start drawing. """
@@ -351,6 +357,15 @@ class LienzoDeDibujo(QWidget):
         self.ultimo_punto = event.position().toPoint()  # Set the last point to the current position
 
     def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.show_grid:
+            painter = QPainter(self)
+            # Dibuja la cuadrícula
+            grid_color = QColor(200, 200, 200)
+            for x in range(0, self.width(), 10):  # Cambia 10 por el tamaño de la cuadrícula
+                painter.drawLine(x, 0, x, self.height())
+            for y in range(0, self.height(), 10):
+                painter.drawLine(0, y, self.width(), y)
         painter = QPainter(self)
 
     def mouseMoveEvent(self, event):
