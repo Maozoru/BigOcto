@@ -2,16 +2,27 @@ import sys
 from PyQt6.QtCore import *
 from PyQt6.QtGui import *
 from PyQt6.QtWidgets import *
+from PIL import Image as PILImage
 from capa import Capa
 from administrador_capas import AdministradorCapas
 from estilos import *
 from herramientas import *
+from barra_menu import BarraMenu  # Importar la clase de barra de menú
 
-class LienzoDeDibujo(QWidget):
+class LienzoDeDibujo(QMainWindow):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("Prototipo BigOcto")
         self.setFixedSize(1200, 800)
+
+        # Crear un widget central y establecer el layout
+        self.central_widget = QWidget(self)
+        self.setCentralWidget(self.central_widget)
+        self.diseno_principal = QHBoxLayout(self.central_widget)
+
+        # Crear la barra de menú
+        self.menu_bar = BarraMenu(self)  # Usar la clase BarraMenu
+        self.setMenuBar(self.menu_bar)  # Establecer la barra de menú
 
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black
@@ -22,9 +33,6 @@ class LienzoDeDibujo(QWidget):
         self.modo_borrador = False
         self.seleccion_activa = False  # Estado de la selección
         self.modo_pixel = False  # Modo del pincel: False = Normal, True = Pixelado
-
-        # Layout principal
-        self.diseno_principal = QHBoxLayout(self)
 
         # Inicializa el lienzo
         self.lienzo = QImage(800, 800, QImage.Format.Format_ARGB32)
@@ -56,7 +64,7 @@ class LienzoDeDibujo(QWidget):
         self.indice_capa_actual = 0
 
         # Botón para abrir la ventana de administración de capas
-        self.boton_administrar_capas = QPushButton("Administrar capas", self)
+        self.boton_administrar_capas = QPushButton(" Administrar capas", self)
         self.boton_administrar_capas.clicked.connect(self.abrir_administrador_capas)
         self.diseno_control.addWidget(self.boton_administrar_capas)
 
@@ -141,7 +149,7 @@ class LienzoDeDibujo(QWidget):
 
         for i, color in enumerate(self.paleta_colores):
             boton_color = QPushButton()
-            boton_color.setStyleSheet(f"background-color: {color}; border: 1px solid black;")
+            boton_color.setStyleSheet(f"background-color: {color }; border: 1px solid black;")
             boton_color.setFixedSize(50, 50)
             boton_color.clicked.connect(lambda checked, col=color: self.set_color(col))
             self.botones_colores.append(boton_color)
@@ -163,9 +171,7 @@ class LienzoDeDibujo(QWidget):
         self.diseno_control.addWidget(self.boton_color_personalizado)
 
         self.diseno_principal.addWidget(self.marco_control)
-
-        self.setLayout(self.diseno_principal)
-
+    
     def abrir_administrador_capas(self):
         """ Abre la ventana de administración de capas. """
         if self.ventana_administrador_capas is None:
@@ -173,56 +179,114 @@ class LienzoDeDibujo(QWidget):
         self.ventana_administrador_capas.show()
 
     def crear_nueva_capa(self, name="Nueva Capa"):
-        # Crea una nueva capa en blanco
-        nueva_capa = Capa(name, QImage(800 , 800, QImage.Format.Format_ARGB32))
-        nueva_capa.imagen.fill(Qt.GlobalColor.white)
-        
-        # Agrega la nueva capa a la lista de capas
+        nueva_capa = Capa(name, QImage(800, 800, QImage.Format.Format_ARGB32))
+        nueva_capa.imagen.fill(Qt.GlobalColor.transparent)  # Transparente por defecto
         self.capas.append(nueva_capa)
         
-        # Actualiza el índice de la capa actual
+        # Seleccionar la nueva capa como activa
         self.indice_capa_actual = len(self.capas) - 1
-        
-        # Actualiza la lista de capas en la ventana de administración
-        if self.ventana_administrador_capas is not None:
-            self.ventana_administrador_capas.actualizar_lista_capas()
+
+        # Actualizar el lienzo
+        self.update_canvas()
 
     def eliminar_capa(self, indice):
+        """ Elimina una capa y actualiza el lienzo. """
         if len(self.capas) > 1:
             del self.capas[indice]
-            if indice < self.indice_capa_actual:
-                self.indice_capa_actual -= 1
-            elif indice == self.indice_capa_actual:
-                if self.indice_capa_actual > 0:
-                    self.indice_capa_actual -= 1
-                else:
-                    self.indice_capa_actual = 0
-            if self.ventana_administrador_capas is not None:
-                self.ventana_administrador_capas.actualizar_lista_capas()
-            self.update_canvas()
+            self.indice_capa_actual = min(self.indice_capa_actual, len(self.capas) - 1)
+            self.update_canvas()  # Actualiza la visualización
         else:
             print("No se puede eliminar la última capa")
 
-    def renombrar_capa(self, indice, nuevo_nombre):
-        self.capas[indice].renombrar(nuevo_nombre)
-        if self.ventana_administrador_capas is not None:
-            self.ventana_administrador_capas.actualizar_lista_capas()
-
-    def ocultar_capa(self, indice):
-        self.capas[indice].visible = False
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
-        self.update()
-
-    def mostrar_capa(self, indice):
-        self.capas[indice].visible = True
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
-        self.update()
-
     def bloquear_capa(self, indice):
-        self.capas[indice].bloqueada = True
+        """ Bloquea la capa seleccionada. """
+        if 0 <= indice < len(self.capas):
+            self.capas[indice].bloquear()
+            self.update_canvas()
 
     def desbloquear_capa(self, indice):
-        self.capas[indice].bloqueada = False
+        """ Desbloquea la capa seleccionada. """
+        if 0 <= indice < len(self.capas):
+            self.capas[indice].desbloquear()
+            self.update_canvas()
+
+    def ajustar_opacidad(self, indice, nueva_opacidad):
+        """ Ajusta la opacidad de la capa especificada. """
+        if 0 <= indice < len(self.capas):
+            self.capas[indice].ajustar_opacidad(nueva_opacidad)
+            self.update_canvas()
+
+    def ocultar_capa(self, indice):
+        """ Oculta la capa y actualiza el lienzo. """
+        if 0 <= indice < len(self.capas):
+            self.capas[indice].visible = False
+            self.update_canvas()  # Actualiza el lienzo
+
+    def mostrar_capa(self, indice):
+        """ Muestra la capa y actualiza el lienzo. """
+        if 0 <= indice < len(self.capas):
+            self.capas[indice].visible = True
+            self.update_canvas()  # Actualiza el lienzo
+
+    def update_canvas(self):
+        """ Actualiza la visualización del lienzo con todas las capas visibles combinadas. """
+        lienzo_completo = QImage(self.capas[0].imagen.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Limpiar el lienzo principal
+
+        # Dibujar todas las capas visibles
+        for capa in self.capas:
+            if capa.visible:  # Solo combinar capas visibles
+                lienzo_completo = self.combinar_imagenes(lienzo_completo, capa.imagen, capa.opacidad)
+
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
+        self.update()
+    
+    def fusionar_capas(self, indice_capa):
+        """ Fusiona la capa actual con la capa inferior. """
+        if indice_capa > 0 and indice_capa < len(self.capas):
+            capa_superior = self.capas[indice_capa]
+            capa_inferior = self.capas[indice_capa - 1]
+
+            # Crear un nuevo QImage para la capa fusionada
+            nueva_imagen = QImage(capa_superior.imagen.size(), QImage.Format.Format_ARGB32)
+            nueva_imagen.fill(Qt.GlobalColor.transparent)
+
+            # Dibujar la capa superior sobre la inferior
+            painter = QPainter(nueva_imagen)
+            painter.drawImage(0, 0, capa_inferior.imagen)
+            painter.drawImage(0, 0, capa_superior.imagen)
+            painter.end()
+
+            # Reemplazar la capa superior con la nueva imagen fusionada
+            self.capas[indice_capa - 1].imagen = nueva_imagen
+            self.eliminar_capa(indice_capa)  # Eliminar la capa superior después de fusionar
+
+            # Actualizar el lienzo
+            self.update_canvas()
+
+    def renombrar_capa(self, indice_capa, nuevo_nombre):
+        """ Renombra la capa especificada por el índice. """
+        if 0 <= indice_capa < len(self.capas):
+            self.capas[indice_capa].renombrar(nuevo_nombre)  # Llama al método renombrar de la clase Capa
+            self.update_canvas()  # Actualiza el lienzo para reflejar el cambio
+    
+    def clonar_capa(self, indice_capa):
+        """ Clona la capa especificada por el índice. """
+        if 0 <= indice_capa < len(self.capas):
+            capa_a_clonar = self.capas[indice_capa]
+            nueva_capa = capa_a_clonar.clonar()  # Usa el método clonar de la clase Capa
+            self.capas.append(nueva_capa)  # Agrega la nueva capa a la lista de capas
+            self.indice_capa_actual = len(self.capas) - 1  # Seleccionar la nueva capa como activa
+            self.update_canvas()  # Actualizar el lienzo
+    
+    def reorganizar_capas(self, indice_capa, nueva_posicion):
+        """ Reorganiza la capa especificada por el índice a una nueva posición. """
+        if 0 <= indice_capa < len(self.capas) and 0 <= nueva_posicion < len(self.capas):
+            # Extrae la capa que se va a mover
+            capa = self.capas.pop(indice_capa)
+            # Inserta la capa en la nueva posición
+            self.capas.insert(nueva_posicion, capa)
+            self.update_canvas()  # Actualiza el lienzo para reflejar el cambio
 
     def ajustar_opacidad(self, indice, opacidad):
         self.capas[indice].opacidad = opacidad
@@ -315,13 +379,13 @@ class LienzoDeDibujo(QWidget):
             current_point = event.position().toPoint()  # Utiliza position() para obtener la posición local
 
             if self.pincel_abajo:
-                self.draw_line(self.ultimo_punto, current_point)
+                self.draw_on_canvas(current_point)  # Llama a la función de dibujo en lugar de draw_line
 
             self.ultimo_punto = current_point
             self.pincel_abajo = True
         elif event.type() == QEvent.Type.TabletRelease:
-            self.pincel_abajo = False
-            self.ultimo_punto = QPoint()
+            self.tabletReleaseEvent(event)  # Manejo de liberación de la tableta
+
     def draw_on_canvas(self, current_point):
         painter = QPainter(self.lienzo)
         painter.setPen(QPen(self.color_pincel, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
@@ -331,7 +395,7 @@ class LienzoDeDibujo(QWidget):
             painter.setCompositionMode(QPainter.CompositionMode.Clear)
 
         if self.modo_pixel:
-            # Implement the pixelated brush drawing
+            # Implementar el dibujo con pincel pixelado
             painter.drawPoint(current_point)
         else:
             if not self.ultimo_punto.isNull():
@@ -342,14 +406,14 @@ class LienzoDeDibujo(QWidget):
         self.update()
 
     def tabletReleaseEvent(self, event: QTabletEvent):
-        """ Handle tablet release event to stop drawing. """
+        """ Maneja el evento de liberación de la tableta para detener el dibujo. """
         self.pincel_abajo = False
-        self.ultimo_punto = QPoint()  # Reset last point when the pen is lifted
+        self.ultimo_punto = QPoint()  # Restablecer el último punto cuando se levanta el lápiz
 
     def tabletPressEvent(self, event: QTabletEvent):
-        """ Handle tablet press event to start drawing. """
+        """ Maneja el evento de presión de la tableta para comenzar a dibujar. """
         self.pincel_abajo = True
-        self.ultimo_punto = event.position().toPoint()  # Set the last point to the current position
+        self.ultimo_punto = event.position().toPoint()  # Establecer el último punto en la posición actual
 
     def paintEvent(self, event):
         painter = QPainter(self)
@@ -357,9 +421,7 @@ class LienzoDeDibujo(QWidget):
     def mouseMoveEvent(self, event):
         if self.pincel_abajo:
             current_point = event.position().toPoint()
-            self.draw_line(self.ultimo_punto, current_point)
-            self.ultimo_punto = current_point
-            self.update()
+            self.draw_on_canvas(current_point)  # Llama a la función de dibujo en lugar de draw_line
 
     def mousePressEvent(self, event):
         if self.boton_rellenar.isChecked():
@@ -513,4 +575,27 @@ class LienzoDeDibujo(QWidget):
     def is_similar_color(self, color1, color2):
         return (abs(color1.red() - color2.red()) <= self.tolerancia and
                 abs(color1.green() - color2.green()) <= self.tolerancia and
-                abs(color1.blue() - color2.blue()) <= self.tolerancia)
+                abs(color1.blue () - color2.blue()) <= self.tolerancia)
+
+    def guardar_lienzo(self, ruta, formato):
+        """ Guarda el contenido del lienzo en un archivo en el formato especificado (PNG o JPG). """
+        # Crear una imagen de Pillow a partir de los datos del lienzo
+        image = QImage(self.size(), QImage.Format.Format_ARGB32)
+        
+        # Renderizar el contenido del lienzo en la imagen
+        painter = QPainter(image)
+        self.render(painter)
+        painter.end()
+        
+        # Convertir QImage a un formato que Pillow puede manejar
+        buffer = image.bits()
+        buffer.setsize(image.byteCount())
+        pil_image = PILImage.frombuffer("RGBA", (image.width(), image.height()), bytes(buffer), "raw", "RGBA", 0, 1)
+        
+        # Guardar la imagen usando Pillow
+        if formato == "PNG":
+            pil_image.save(ruta, format="PNG")
+        elif formato == "JPG":
+            calidad, ok = QInputDialog.getInt(self.parent(), "Calidad JPG", "Selecciona calidad (0-100):", value=100, min=0, max=100)
+            if ok:
+                pil_image.save(ruta, format="JPEG", quality=calidad)

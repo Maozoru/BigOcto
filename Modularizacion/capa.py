@@ -20,17 +20,29 @@ class Capa:
         self.opacidad = nueva_opacidad
 
     def fusionar(self, otra_capa):
-        # Implementar la lógica para fusionar las capas
-        pass
+        if not self.visible or not otra_capa.visible:
+            return  # No fusionar si alguna capa está oculta
+        # Suponiendo que imagen es un QImage o una imagen manipulable
+        # Aplicar opacidad de la capa actual sobre la otra capa
+        painter = QPainter(otra_capa.imagen)
+        painter.setOpacity(self.opacidad)
+        painter.drawImage(0, 0, self.imagen)
+        painter.end()
 
     def clonar(self):
-        # Implementar la lógica para clonar la capa
-        pass
+        # Crear una nueva capa con el mismo nombre y una copia de la imagen
+        nueva_capa = Capa(self.name + " (Copia)", self.imagen.copy())
+        nueva_capa.visible = self.visible
+        nueva_capa.opacidad = self.opacidad
+        nueva_capa.bloqueada = self.bloqueada
+        return nueva_capa
 
     def bloquear(self):
+        """Bloquea la capa para evitar modificaciones."""
         self.bloqueada = True
 
     def desbloquear(self):
+        """Desbloquea la capa para permitir modificaciones."""
         self.bloqueada = False
 
     def ocultar(self):
