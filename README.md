@@ -52,11 +52,14 @@ Los siguientes archivos deben estar en la misma carpeta para ejecutar el proyect
 - Herramienta de cubo de relleno con ajuste de tolerancia.
 - Paleta de colores predeterminada.
 - Implementación de rueda de color.
+- Exportar en formatos de imagenes(Png y jpg)
+- Zoom
 
 ## Próximos Avances
 
-- Exportar en formatos de imagenes(Png y jpg)
 - Nuevos modos de pincel (Vector).
+- Atajos de teclado
+- Deshacer y Rehacer
 
 ---
 
