@@ -8,7 +8,7 @@ from administrador_capas import AdministradorCapas
 from estilos import *
 from herramientas import *
 from barra_menu import BarraMenu  # Importar la clase de barra de menú
-from atajos import Shortcuts
+from shortcuts import Shortcuts
 
 class LienzoDeDibujo(QMainWindow):
     def __init__(self, parent=None):
@@ -26,8 +26,8 @@ class LienzoDeDibujo(QMainWindow):
         self.setMenuBar(self.menu_bar)  # Establecer la barra de menú
 
         # Crear la clase de atajos
-        self.shortcuts = Shortcuts()
-        self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
+        # self.shortcuts = Shortcuts()
+        # self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
 
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black

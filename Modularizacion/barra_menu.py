@@ -1,5 +1,5 @@
 from PyQt6.QtWidgets import QMenuBar, QFileDialog, QMessageBox
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QIcon
 
 class BarraMenu(QMenuBar):
     def __init__(self, parent=None):
@@ -40,6 +40,20 @@ class BarraMenu(QMenuBar):
         zoom_out_action.triggered.connect(parent.zoom_out)
         ver_menu.addAction(zoom_out_action)
 
+        # Crear menú "Editar"
+        editar_menu = self.addMenu("Editar")
+
+        # Crear acciones para Deshacer y Rehacer
+        deshacer_action = QAction(QIcon("volver.png"), "Deshacer", self)
+        # deshacer_action.triggered.connect(parent.deshacer)  # Conectar a la función de deshacer en LienzoDeDibujo
+
+        rehacer_action = QAction(QIcon("rehacer.png"), "Rehacer", self)
+        # rehacer_action.triggered.connect(parent.rehacer)  # Conectar a la función de rehacer en LienzoDeDibujo
+
+        # Agregar acciones de Deshacer y Rehacer al menú "Editar"
+        editar_menu.addAction(deshacer_action)
+        editar_menu.addAction(rehacer_action)
+
         # Crear el menú de guardar
         self.crear_menu_guardar()
 
@@ -63,6 +77,6 @@ class BarraMenu(QMenuBar):
     def mostrar_menu_guardar(self):
         """ Muestra un diálogo para guardar el lienzo. """
         ruta, _ = QFileDialog.getSaveFileName(self.parent(), "Guardar Lienzo", "", "Imágenes PNG (*.png);;Imágenes JPG (*.jpg)")
-        if ruta:  # Verifica que se haya seleccionado una ruta
+        if ruta:  # Ver ifica que se haya seleccionado una ruta
             formato = "PNG" if ruta.endswith(".png") else "JPEG"
-            self.parent().guardar_lienzo(ruta, formato) 
+            self.parent().guardar_lienzo(ruta, formato)

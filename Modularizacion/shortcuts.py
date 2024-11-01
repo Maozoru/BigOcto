@@ -17,25 +17,25 @@ class Shortcuts(QMainWindow):
         zoom_out_action = self.create_action("Zoom Out", self.lienzo.zoom_out, "Ctrl+-")
         self.addAction(zoom_out_action)
 
-        undo_action = self.create_action("Deshacer", self.undo, "Ctrl+Z")
+        undo_action = self.create_action("Deshacer", self.lienzo.deshacer, "Ctrl+Z")
         self.addAction(undo_action)
 
-        redo_action = self.create_action("Rehacer", self.redo, "Ctrl+Y")
+        redo_action = self.create_action("Rehacer", self.lienzo.rehacer, "Ctrl+Y")
         self.addAction(redo_action)
 
         save_action = self.create_action("Guardar", self.lienzo.guardar_lienzo, "Ctrl+S")
         self.addAction(save_action)
 
-        new_action = self.create_action("Nuevo Lienzo", self.lienzo.nuevo_lienzo, "Ctrl+N")
+        new_action = self.create_action("Nuevo lienzo", self.lienzo.clear_canvas, "Ctrl+N")
         self.addAction(new_action)
 
-        brush_action = self.create_action("Herramienta Pincel", self.lienzo.seleccionar_pincel, "B")
+        brush_action = self.create_action("Herramienta pincel", self.lienzo.seleccion_normie, "B")
         self.addAction(brush_action)
 
-        eraser_action = self.create_action("Herramienta Borrador", self.lienzo.seleccionar_borrador, "E")
+        eraser_action = self.create_action("Herramienta borrador", self.lienzo.activar_goma, "E")
         self.addAction(eraser_action)
 
-        color_action = self.create_action("Cambiar Color", self.change_color, "C")
+        color_action = self.create_action("Cambiar color", self.lienzo.choose_color, "C")
         self.addAction(color_action)
 
     def create_action(self, name, slot, shortcut):
@@ -51,9 +51,3 @@ class Shortcuts(QMainWindow):
     def redo(self):
         """Rehacer la última acción."""
         print("Rehacer acción")
-
-    def change_color(self):
-        """Abre un selector de color y cambia el color del pincel."""
-        color = QColorDialog.getColor()
-        if color.isValid():
-            self.lienzo.cambiar_color(color.name())
