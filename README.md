@@ -55,9 +55,8 @@ Los siguientes archivos deben estar en la misma carpeta para ejecutar el proyect
 
 ## Próximos Avances
 
-- Gestión de capas.
-- Herramienta de selección.
-- Nuevos modos de pincel (Pixel).
+- Exportar en formatos de imagenes(Png y jpg)
+- Nuevos modos de pincel (Vector).
 
 ---
 

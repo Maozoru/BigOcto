@@ -8,6 +8,7 @@ from administrador_capas import AdministradorCapas
 from estilos import *
 from herramientas import *
 from barra_menu import BarraMenu  # Importar la clase de barra de menú
+from atajos import Shortcuts
 
 class LienzoDeDibujo(QMainWindow):
     def __init__(self, parent=None):
@@ -21,8 +22,12 @@ class LienzoDeDibujo(QMainWindow):
         self.diseno_principal = QHBoxLayout(self.central_widget)
 
         # Crear la barra de menú
-        self.menu_bar = BarraMenu(self)  # Usar la clase BarraMenu
+        self.menu_bar = BarraMenu(self)  # Asegúrate de pasar la instancia correcta
         self.setMenuBar(self.menu_bar)  # Establecer la barra de menú
+
+        # Crear la clase de atajos
+        self.shortcuts = Shortcuts()
+        self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
 
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black
@@ -33,6 +38,10 @@ class LienzoDeDibujo(QMainWindow):
         self.modo_borrador = False
         self.seleccion_activa = False  # Estado de la selección
         self.modo_pixel = False  # Modo del pincel: False = Normal, True = Pixelado
+        
+        # Atributos de zoom
+        self.zoom_factor = 1.0  # Factor de zoom inicial
+        self.zoom_step = 0.1     # Incremento/decremento del zoom
 
         # Inicializa el lienzo
         self.lienzo = QImage(800, 800, QImage.Format.Format_ARGB32)
@@ -227,22 +236,28 @@ class LienzoDeDibujo(QMainWindow):
         if 0 <= indice < len(self.capas):
             self.capas[indice].visible = True
             self.update_canvas()  # Actualiza el lienzo
-
+    
     def update_canvas(self):
         """ Actualiza la visualización del lienzo con todas las capas visibles combinadas. """
-        lienzo_completo = QImage(self.capas[0].imagen.size(), QImage.Format.Format_ARGB32)
-        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Limpiar el lienzo principal
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Llenar con transparencia
+
+        # Crear un pintor para dibujar en el lienzo
+        painter = QPainter(lienzo_completo)
+
+        # Dibujar un fondo blanco
+        painter.fillRect(0, 0, lienzo_completo.width(), lienzo_completo.height(), Qt.GlobalColor.white)
 
         # Dibujar todas las capas visibles
         for capa in self.capas:
             if capa.visible:  # Solo combinar capas visibles
                 lienzo_completo = self.combinar_imagenes(lienzo_completo, capa.imagen, capa.opacidad)
 
-        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo)) 
         self.update()
     
     def fusionar_capas(self, indice_capa):
-        """ Fusiona la capa actual con la capa inferior. """
+        """ Fusiona la capa actual con la capa inferior . """
         if indice_capa > 0 and indice_capa < len(self.capas):
             capa_superior = self.capas[indice_capa]
             capa_inferior = self.capas[indice_capa - 1]
@@ -292,6 +307,26 @@ class LienzoDeDibujo(QMainWindow):
         self.capas[indice].opacidad = opacidad
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
         self.update()
+
+    def zoom_in(self):
+        """Aumenta el zoom del lienzo."""
+        self.zoom_factor += self.zoom_step
+        self.update_zoom()
+
+    def zoom_out(self):
+        """Disminuye el zoom del lienzo."""
+        self.zoom_factor = max(0.1, self.zoom_factor - self.zoom_step)  # Evitar zoom negativo
+        self.update_zoom()
+
+    def update_zoom(self):
+        """Actualiza la visualización del lienzo según el factor de zoom."""
+        # Aquí deberías escalar el lienzo o la vista que estás mostrando.
+        # Por ejemplo, si estás usando un QLabel para mostrar el lienzo:
+        scaled_image = self.lienzo.scaled(self.lienzo.size() * self.zoom_factor, 
+                                           Qt.AspectRatioMode.KeepAspectRatio, 
+                                           Qt.TransformationMode.SmoothTransformation)
+        self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(scaled_image))
+        self.update()  # Actualiza la ventana para reflejar los cambios
 
     def activar_seleccion(self, checked):
         self.seleccion_activa = checked
@@ -388,20 +423,29 @@ class LienzoDeDibujo(QMainWindow):
 
     def draw_on_canvas(self, current_point):
         painter = QPainter(self.lienzo)
-        painter.setPen(QPen(self.color_pincel, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
-        painter.setOpacity(self.opacidad_pincel)
 
+        # Configura el color y la opacidad del pincel
+        brush_color_with_opacity = QColor(self.color_pincel)
+        brush_color_with_opacity.setAlphaF(self.opacidad_pincel)
+
+        # Si el borrador está activo, dibuja en blanco
         if self.modo_borrador:
-            painter.setCompositionMode(QPainter.CompositionMode.Clear)
-
-        if self.modo_pixel:
-            # Implementar el dibujo con pincel pixelado
-            painter.drawPoint(current_point)
+            painter.setPen(QPen(Qt.GlobalColor.white, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
         else:
-            if not self.ultimo_punto.isNull():
-                painter.drawLine(self.ultimo_punto, current_point)
+            if self.modo_pixel:
+                # Configuración para pincel pixelado (sin suavizado)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+                painter.setPen(QPen(brush_color_with_opacity, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.SquareCap, Qt.PenJoinStyle.BevelJoin))
+            else:
+                # Configuración para pincel normal (con suavizado)
+                painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+                painter.setPen(QPen(brush_color_with_opacity, self.tamaño_pincel, Qt.PenStyle.SolidLine, Qt.PenCapStyle.RoundCap, Qt.PenJoinStyle.RoundJoin))
 
-        self.ultimo_punto = current_point
+        # Dibuja la línea
+        painter.drawLine(self.ultimo_punto, current_point)
+        painter.end()
+
+        # Actualiza el lienzo
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
         self.update()
 
@@ -448,15 +492,19 @@ class LienzoDeDibujo(QMainWindow):
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
 
     def combinar_imagenes(self, imagen1, imagen2):
-        """ Combina dos imágenes QImage respetando la transparencia. """
-        pixmap1 = QPixmap.fromImage(imagen1)
-        pixmap2 = QPixmap.fromImage(imagen2)
+        # Crear un nuevo QImage que contenga la combinación de imagen1 y imagen2
+        lienzo_completo = QImage(imagen1.size(), QImage.Format_ARGB32_Premultiplied)  # Cambiar a Format_ARGB32_Premultiplied
+        lienzo_completo.fill(Qt.transparent)  # Rellenar con transparencia
 
-        painter = QPainter(pixmap1)
-        painter.drawPixmap(0, 0, pixmap2)
+        painter = QPainter(lienzo_completo)
+        painter.drawImage(0, 0, imagen1)  # Dibuja la primera imagen
+
+        # Convertir QPixmap a QImage
+        imagen2_image = imagen2.toImage()  # Convertir QPixmap a QImage
+        painter.drawImage(0, 0, imagen2_image)  # Dibuja la segunda imagen
         painter.end()
 
-        return pixmap1.toImage()
+        return lienzo_completo
 
     def draw_line(self, start_point, end_point):
         painter = QPainter(self.lienzo)
@@ -528,7 +576,7 @@ class LienzoDeDibujo(QMainWindow):
 
         # Añade los colores recientes
         for i, color in enumerate(self.colores_recientes):
-            color_btn = QPushButton()
+            color_btn = QPushButton ()
             color_btn.setStyleSheet(f"background-color: {color}; border: 1px solid black;")
             color_btn.setFixedSize(50, 50)
             color_btn.clicked.connect(lambda checked, col=color: self.set_color(col))
@@ -576,26 +624,39 @@ class LienzoDeDibujo(QMainWindow):
         return (abs(color1.red() - color2.red()) <= self.tolerancia and
                 abs(color1.green() - color2.green()) <= self.tolerancia and
                 abs(color1.blue () - color2.blue()) <= self.tolerancia)
+                
+    def guardar_lienzo_dialog(self):
+        """ Abre un diálogo para seleccionar la ruta y el formato para guardar el lienzo. """
+        opciones = QFileDialog.Options()
+        ruta, _ = QFileDialog.getSaveFileName(self, "Guardar Lienzo", "", "Imágenes PNG (*.png);;Imágenes JPG (*.jpg)", options=opciones)
+        if ruta:
+            if ruta.endswith('.png'):
+                self.guardar_lienzo(ruta, "PNG")
+            elif ruta.endswith('.jpg'):
+                self.guardar_lienzo(ruta, "JPG")
 
     def guardar_lienzo(self, ruta, formato):
         """ Guarda el contenido del lienzo en un archivo en el formato especificado (PNG o JPG). """
-        # Crear una imagen de Pillow a partir de los datos del lienzo
-        image = QImage(self.size(), QImage.Format.Format_ARGB32)
-        
-        # Renderizar el contenido del lienzo en la imagen
-        painter = QPainter(image)
-        self.render(painter)
+        # Renderizar el contenido del lienzo en un QImage
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Lienzo transparente
+
+        painter = QPainter(lienzo_completo)
+        # No dibujes el fondo blanco aquí si quieres mantener la transparencia
+        self.etiqueta_lienzo.render(painter)
         painter.end()
-        
-        # Convertir QImage a un formato que Pillow puede manejar
-        buffer = image.bits()
-        buffer.setsize(image.byteCount())
-        pil_image = PILImage.frombuffer("RGBA", (image.width(), image.height()), bytes(buffer), "raw", "RGBA", 0, 1)
-        
+
+        # Convertir el QImage a un formato que PIL pueda manejar y guardarlo
+        buffer = lienzo_completo.bits()
+        buffer.setsize(lienzo_completo.bytesPerLine() * lienzo_completo.height())  
+        data = buffer.asstring(lienzo_completo.bytesPerLine() * lienzo_completo.height())
+
+        # Crear la imagen PIL a partir del buffer
+        pil_image = PILImage.frombuffer("RGBA", (lienzo_completo.width(), lienzo_completo.height()), data, "raw", "BGRA", 0, 1)
+
         # Guardar la imagen usando Pillow
         if formato == "PNG":
-            pil_image.save(ruta, format="PNG")
-        elif formato == "JPG":
-            calidad, ok = QInputDialog.getInt(self.parent(), "Calidad JPG", "Selecciona calidad (0-100):", value=100, min=0, max=100)
-            if ok:
-                pil_image.save(ruta, format="JPEG", quality=calidad)
+            pil_image.save(ruta, format="PNG")  # Guardar como PNG, asegurando que la transparencia se conserve
+        elif formato == "JPEG":
+            pil_image = pil_image.convert("RGB")
+            pil_image.save(ruta, format="JPEG", quality=95)  # Ajusta la calidad según sea necesario

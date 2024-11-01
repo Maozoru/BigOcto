@@ -1,6 +1,5 @@
 from PyQt6.QtWidgets import QMenuBar, QFileDialog, QMessageBox
 from PyQt6.QtGui import QAction
-import numpy as np
 
 class BarraMenu(QMenuBar):
     def __init__(self, parent=None):
@@ -28,25 +27,42 @@ class BarraMenu(QMenuBar):
         archivo_menu.addSeparator()
         archivo_menu.addAction(salir_action)
 
+        # Crear menú de "Ver" para las acciones de Zoom
+        ver_menu = self.addMenu("Ver")
+
+        # Acción para Zoom In
+        zoom_in_action = QAction("Zoom In", self)
+        zoom_in_action.triggered.connect(parent.zoom_in)
+        ver_menu.addAction(zoom_in_action)
+
+        # Acción para Zoom Out
+        zoom_out_action = QAction("Zoom Out", self)
+        zoom_out_action.triggered.connect(parent.zoom_out)
+        ver_menu.addAction(zoom_out_action)
+
+        # Crear el menú de guardar
+        self.crear_menu_guardar()
+
+    def crear_menu_guardar(self):
+        """ Crea el menú de guardar. """
+        guardar_action = QAction("Guardar", self)
+        guardar_action.triggered.connect(self.mostrar_menu_guardar)
+        self.addAction(guardar_action)  # Agregar la acción al menú
+
     def nuevo_archivo(self):
-        # Lógica para crear un nuevo archivo
+        """ Lógica para crear un nuevo archivo. """
         QMessageBox.information(self.parent(), "Nuevo Archivo", "Se ha creado un nuevo archivo.")
 
     def abrir_archivo(self):
-        # Lógica para abrir un archivo
+        """ Lógica para abrir un archivo. """
         opciones = QFileDialog.Options()
         archivo, _ = QFileDialog.getOpenFileName(self.parent(), "Abrir Archivo", "", "Todos los Archivos (*);;Archivos de Texto (*.txt)", options=opciones)
         if archivo:
             QMessageBox.information(self.parent(), "Archivo Abierto", f"Se ha abierto el archivo: {archivo}")
 
     def mostrar_menu_guardar(self):
-        # Método para mostrar el menú de guardar
-        ruta, _ = QFileDialog.getSaveFileName(self.parent(), "Guardar archivo", "", "Imagen PNG (*.png);;Imagen JPG (*.jpg)")
-        if ruta:
-            formato = "PNG" if ruta.endswith(".png") else "JPG"
-            # Asegúrate de que el método guardar_lienzo esté implementado en la clase padre
-            if hasattr(self.parent(), 'guardar_lienzo'):
-                self.parent().guardar_lienzo(ruta, formato)
-            else:
-                QMessageBox.warning(self.parent(), "Error", "Método guardar_lienzo no encontrado en el lienzo de dibujo.")
-
+        """ Muestra un diálogo para guardar el lienzo. """
+        ruta, _ = QFileDialog.getSaveFileName(self.parent(), "Guardar Lienzo", "", "Imágenes PNG (*.png);;Imágenes JPG (*.jpg)")
+        if ruta:  # Verifica que se haya seleccionado una ruta
+            formato = "PNG" if ruta.endswith(".png") else "JPEG"
+            self.parent().guardar_lienzo(ruta, formato) 

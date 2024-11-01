@@ -86,10 +86,12 @@ class PixelBrush:
         self.size = 1  # Tamaño predeterminado del pincel (1 píxel)
 
     def draw(self, x: int, y: int):
-        # Dibuja un solo píxel en la posición (x, y)
-        for i in range(-self.size // 2, self.size // 2 + 1):
-            for j in range(-self.size // 2, self.size // 2 + 1):
-                self.canvas.setPixel(x + i, y + j, self.color.rgb())
+        """Dibuja una línea vertical desde la posición (x, y)."""
+        half_size = self.size // 2
+        
+        # Dibuja solo en la dirección vertical
+        for offset in range(-half_size, half_size + 1):
+            self.canvas.setPixel(x, y + offset, self.color.rgb())
 
     def set_color(self, color: QColor):
         """Establece el color del pincel."""
