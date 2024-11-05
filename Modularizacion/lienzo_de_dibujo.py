@@ -239,7 +239,7 @@ class LienzoDeDibujo(QMainWindow):
     
     def update_canvas(self):
         """ Actualiza la visualización del lienzo con todas las capas visibles combinadas. """
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGBA8888)
         lienzo_completo.fill(Qt.GlobalColor.transparent)  # Llenar con transparencia
 
         # Crear un pintor para dibujar en el lienzo
@@ -321,7 +321,6 @@ class LienzoDeDibujo(QMainWindow):
     def update_zoom(self):
         """Actualiza la visualización del lienzo según el factor de zoom."""
         # Aquí deberías escalar el lienzo o la vista que estás mostrando.
-        # Por ejemplo, si estás usando un QLabel para mostrar el lienzo:
         scaled_image = self.lienzo.scaled(self.lienzo.size() * self.zoom_factor, 
                                            Qt.AspectRatioMode.KeepAspectRatio, 
                                            Qt.TransformationMode.SmoothTransformation)
@@ -482,7 +481,7 @@ class LienzoDeDibujo(QMainWindow):
 
     def update_canvas(self):
         """ Actualiza la visualización del lienzo con todas las capas. """
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGBA8888)
         lienzo_completo.fill(Qt.GlobalColor.transparent)
 
         # Dibujar todas las capas visibles
@@ -492,16 +491,15 @@ class LienzoDeDibujo(QMainWindow):
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(lienzo_completo))
 
     def combinar_imagenes(self, imagen1, imagen2):
-        # Crear un nuevo QImage que contenga la combinación de imagen1 y imagen2
-        lienzo_completo = QImage(imagen1.size(), QImage.Format_ARGB32_Premultiplied)  # Cambiar a Format_ARGB32_Premultiplied
-        lienzo_completo.fill(Qt.transparent)  # Rellenar con transparencia
+        # Create a new QImage that contains the combination of imagen1 and imagen2
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGBA8888)  # Correct access here
+        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Fill with transparency
 
         painter = QPainter(lienzo_completo)
-        painter.drawImage(0, 0, imagen1)  # Dibuja la primera imagen
+        painter.drawImage(0, 0, imagen1)  # Draw the first image
 
-        # Convertir QPixmap a QImage
-        imagen2_image = imagen2.toImage()  # Convertir QPixmap a QImage
-        painter.drawImage(0, 0, imagen2_image)  # Dibuja la segunda imagen
+        # Use imagen2 directly since it is already a QImage
+        painter.drawImage(0, 0, imagen2)  # Draw the second image
         painter.end()
 
         return lienzo_completo
@@ -638,7 +636,7 @@ class LienzoDeDibujo(QMainWindow):
     def guardar_lienzo(self, ruta, formato):
         """ Guarda el contenido del lienzo en un archivo en el formato especificado (PNG o JPG). """
         # Renderizar el contenido del lienzo en un QImage
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_ARGB32)
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGBA8888)
         lienzo_completo.fill(Qt.GlobalColor.transparent)  # Lienzo transparente
 
         painter = QPainter(lienzo_completo)
