@@ -26,8 +26,8 @@ class LienzoDeDibujo(QMainWindow):
         self.setMenuBar(self.menu_bar)  # Establecer la barra de menú
 
         # Crear la clase de atajos
-        # self.shortcuts = Shortcuts()
-        # self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
+        self.shortcuts = Shortcuts(self)
+        self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
 
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black
@@ -181,6 +181,14 @@ class LienzoDeDibujo(QMainWindow):
 
         self.diseno_principal.addWidget(self.marco_control)
     
+    def undo(self):
+        """Deshacer la última acción."""
+        print("Deshacer acción")
+
+    def redo(self):
+        """Rehacer la última acción."""
+        print("Rehacer acción")
+
     def abrir_administrador_capas(self):
         """ Abre la ventana de administración de capas. """
         if self.ventana_administrador_capas is None:
@@ -320,7 +328,6 @@ class LienzoDeDibujo(QMainWindow):
 
     def update_zoom(self):
         """Actualiza la visualización del lienzo según el factor de zoom."""
-        # Aquí deberías escalar el lienzo o la vista que estás mostrando.
         scaled_image = self.lienzo.scaled(self.lienzo.size() * self.zoom_factor, 
                                            Qt.AspectRatioMode.KeepAspectRatio, 
                                            Qt.TransformationMode.SmoothTransformation)
@@ -636,7 +643,7 @@ class LienzoDeDibujo(QMainWindow):
     def guardar_lienzo(self, ruta, formato):
         """ Guarda el contenido del lienzo en un archivo en el formato especificado (PNG o JPG). """
         # Renderizar el contenido del lienzo en un QImage
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGBA8888)
+        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGB32)
         lienzo_completo.fill(Qt.GlobalColor.transparent)  # Lienzo transparente
 
         painter = QPainter(lienzo_completo)

@@ -44,11 +44,11 @@ class BarraMenu(QMenuBar):
         editar_menu = self.addMenu("Editar")
 
         # Crear acciones para Deshacer y Rehacer
-        deshacer_action = QAction(QIcon("volver.png"), "Deshacer", self)
-        # deshacer_action.triggered.connect(parent.deshacer)  # Conectar a la función de deshacer en LienzoDeDibujo
+        deshacer_action = QAction("Deshacer", self)
+        deshacer_action.triggered.connect(parent.undo)
 
-        rehacer_action = QAction(QIcon("rehacer.png"), "Rehacer", self)
-        # rehacer_action.triggered.connect(parent.rehacer)  # Conectar a la función de rehacer en LienzoDeDibujo
+        rehacer_action = QAction("Rehacer", self)
+        rehacer_action.triggered.connect(parent.redo)
 
         # Agregar acciones de Deshacer y Rehacer al menú "Editar"
         editar_menu.addAction(deshacer_action)

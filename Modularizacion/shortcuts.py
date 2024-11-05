@@ -17,10 +17,10 @@ class Shortcuts(QMainWindow):
         zoom_out_action = self.create_action("Zoom Out", self.lienzo.zoom_out, "Ctrl+-")
         self.addAction(zoom_out_action)
 
-        undo_action = self.create_action("Deshacer", self.lienzo.deshacer, "Ctrl+Z")
+        undo_action = self.create_action("Deshacer", self.lienzo.undo, "Ctrl+Z")
         self.addAction(undo_action)
 
-        redo_action = self.create_action("Rehacer", self.lienzo.rehacer, "Ctrl+Y")
+        redo_action = self.create_action("Rehacer", self.lienzo.redo, "Ctrl+Y")
         self.addAction(redo_action)
 
         save_action = self.create_action("Guardar", self.lienzo.guardar_lienzo, "Ctrl+S")
@@ -44,10 +44,3 @@ class Shortcuts(QMainWindow):
         action.setShortcut(QKeySequence(shortcut))
         return action
 
-    def undo(self):
-        """Deshacer la última acción."""
-        print("Deshacer acción")
-
-    def redo(self):
-        """Rehacer la última acción."""
-        print("Rehacer acción")
