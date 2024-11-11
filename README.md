@@ -24,17 +24,19 @@ Para ejecutar el código del proyecto, asegúrate de tener instalados los siguie
 
 - [Python](https://www.python.org/)
 - [PyQt6](https://pypi.org/project/PyQt6/) (Instalar con: `pip install pyqt6`)
+- [Pillow] (https://pypi.org/project/pillow/) (Instalar con: `pip install pillow`)
 
 ## Archivos del Proyecto
 
 Los siguientes archivos deben estar en la misma carpeta para ejecutar el proyecto correctamente:
 
-- `administrador_capas.py`
-- `capa.py`
-- `estilos.py`
-- `herramientas.py`
-- `lienzo_de_dibujo.py`
-- `main.py`
+- administrador_capas.py
+- barra_menu.py
+- capa.py
+- estilos.py
+- herramientas.py
+- lienzo_de_dibujo.py
+- main.py
 
 ## Ejecución
 
