@@ -19,15 +19,6 @@ class Herramientas:
     def toleranciadelrelleno(self, value):
         self.relleno.tolerancia = value  # Asegúrate de asignar la tolerancia al objeto Relleno
 
-    def update_recent_palette(self):
-        """ Actualiza la visualización de los colores recientes. """
-        for i, color in enumerate(self.colores_recientes):
-            btn = QPushButton()
-            btn.setStyleSheet(f"background-color: {color}; border: 1px solid black;")
-            btn.setFixedSize(50, 50)
-            btn.clicked.connect(lambda checked, col=color: self.set_color(col))
-            self.diseno_paleta_reciente.addWidget(btn, i // 2, i % 2)
-
     def choose_color(self):
         color = QColorDialog.getColor()
         if color.isValid():
