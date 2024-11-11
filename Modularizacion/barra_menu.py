@@ -54,14 +54,6 @@ class BarraMenu(QMenuBar):
         editar_menu.addAction(deshacer_action)
         editar_menu.addAction(rehacer_action)
 
-        # Crear el menú de guardar
-        self.crear_menu_guardar()
-
-    def crear_menu_guardar(self):
-        """ Crea el menú de guardar. """
-        guardar_action = QAction("Guardar", self)
-        guardar_action.triggered.connect(self.mostrar_menu_guardar)
-        self.addAction(guardar_action)  # Agregar la acción al menú
 
     def nuevo_archivo(self):
         """ Lógica para crear un nuevo archivo. """

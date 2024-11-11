@@ -8,7 +8,6 @@ from administrador_capas import AdministradorCapas
 from estilos import *
 from herramientas import *
 from barra_menu import BarraMenu  # Importar la clase de barra de menú
-from shortcuts import Shortcuts
 
 class LienzoDeDibujo(QMainWindow):
     def __init__(self, parent=None):
@@ -21,13 +20,17 @@ class LienzoDeDibujo(QMainWindow):
         self.setCentralWidget(self.central_widget)
         self.diseno_principal = QHBoxLayout(self.central_widget)
 
+        # Create the scroll area
+        self.scroll_area = QScrollArea(self)  # Initialize the scroll area
+        self.scroll_area.setWidgetResizable(True)  # Allow the widget to resize
+        self.diseno_principal.addWidget(self.scroll_area)  # Add scroll area to the main layout
+
         # Crear la barra de menú
         self.menu_bar = BarraMenu(self)  # Asegúrate de pasar la instancia correcta
         self.setMenuBar(self.menu_bar)  # Establecer la barra de menú
 
-        # Crear la clase de atajos
-        self.shortcuts = Shortcuts(self)
-        self.shortcuts.set_shortcuts()  # Asegúrate de que esto se llame
+        # Crear los atajos
+        self.setup_shortcuts()
 
         # Atributos del pincel y herramientas
         self.color_pincel = Qt.GlobalColor.black
@@ -42,6 +45,9 @@ class LienzoDeDibujo(QMainWindow):
         # Atributos de zoom
         self.zoom_factor = 1.0  # Factor de zoom inicial
         self.zoom_step = 0.1     # Incremento/decremento del zoom
+        self.mouse_pos = None  # Asegúrate de definir cómo se obtiene la posición del mouse
+        self.previous_zoom_pos = (0, 0)  # Guardamos la posición previa del zoom
+        self.zoom_locked = False  # Bloqueo del zoom
 
         # Inicializa el lienzo
         self.lienzo = QImage(800, 800, QImage.Format.Format_ARGB32)
@@ -49,6 +55,8 @@ class LienzoDeDibujo(QMainWindow):
         self.etiqueta_lienzo = QLabel(self)
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.lienzo))
         self.diseno_principal.addWidget(self.etiqueta_lienzo, 1)
+
+        self.scroll_area.setWidget(self.etiqueta_lienzo)
 
         # Configuración del marco de control
         self.marco_control = QFrame(self)
@@ -181,6 +189,43 @@ class LienzoDeDibujo(QMainWindow):
 
         self.diseno_principal.addWidget(self.marco_control)
     
+    def setup_shortcuts(self):
+        # Crear atajo para zoom in
+        self.shortcut_zoom_in = QShortcut(QKeySequence("Ctrl++"), self)
+        self.shortcut_zoom_in.activated.connect(self.zoom_in)
+
+        # Crear atajo para zoom out
+        self.shortcut_zoom_out = QShortcut(QKeySequence("Ctrl+-"), self)
+        self.shortcut_zoom_out.activated.connect(self.zoom_out)
+
+        # Crear atajo para deshacer
+        self.shortcut_undo = QShortcut(QKeySequence("Ctrl+Z"), self)
+        self.shortcut_undo.activated.connect(self.undo)
+
+        # Crear atajo para rehacer
+        self.shortcut_redo = QShortcut(QKeySequence("Ctrl+Y"), self)
+        self.shortcut_redo.activated.connect(self.redo)
+
+        # Crear atajo para guardar
+        self.shortcut_save = QShortcut(QKeySequence("Ctrl+S"), self)
+        self.shortcut_save.activated.connect(self.guardar_lienzo)
+
+        # Crear atajo para nueva capa
+        self.shortcut_new = QShortcut(QKeySequence("Ctrl+N"), self)
+        self.shortcut_new.activated.connect(self.clear_canvas)
+
+        # Crear atajo para pincel
+        self.shortcut_brush = QShortcut(QKeySequence("B"), self)
+        self.shortcut_brush.activated.connect(self.seleccion_normie)
+
+        # Crear atajo para pixel
+        self.shortcut_brush = QShortcut(QKeySequence("P"), self)
+        self.shortcut_brush.activated.connect(self.seleccion_pixel)
+
+        # Crear atajo para cambiar color
+        self.shortcut_color = QShortcut(QKeySequence("C"), self)
+        self.shortcut_color.activated.connect(self.choose_color)
+
     def undo(self):
         """Deshacer la última acción."""
         print("Deshacer acción")
@@ -316,6 +361,22 @@ class LienzoDeDibujo(QMainWindow):
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(self.capas[self.indice_capa_actual].imagen))
         self.update()
 
+    def set_mouse_position(self, pos):
+        """Actualiza la posición del mouse"""
+        self.mouse_pos = pos
+
+    def wheelEvent(self, event: QWheelEvent):
+        """Maneja el evento de la rueda del ratón para hacer zoom con Ctrl"""
+        if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
+            # Detectar la dirección de la rueda
+            if event.angleDelta().y() > 0:  # Si rueda hacia arriba
+                self.zoom_in()
+            else:  # Si rueda hacia abajo
+                self.zoom_out()
+        else:
+            # Aquí puedes agregar otros comportamientos si es necesario
+            super().wheelEvent(event)
+
     def zoom_in(self):
         """Aumenta el zoom del lienzo."""
         self.zoom_factor += self.zoom_step
@@ -323,15 +384,60 @@ class LienzoDeDibujo(QMainWindow):
 
     def zoom_out(self):
         """Disminuye el zoom del lienzo."""
-        self.zoom_factor = max(0.1, self.zoom_factor - self.zoom_step)  # Evitar zoom negativo
+        self.zoom_factor = max(0.1, self.zoom_factor - self.zoom_step)
         self.update_zoom()
 
     def update_zoom(self):
-        """Actualiza la visualización del lienzo según el factor de zoom."""
-        scaled_image = self.lienzo.scaled(self.lienzo.size() * self.zoom_factor, 
-                                           Qt.AspectRatioMode.KeepAspectRatio, 
-                                           Qt.TransformationMode.SmoothTransformation)
+        """Actualiza la visualización del lienzo según el factor de zoom y la posición del mouse"""
+        if self.mouse_pos is None:
+            return  # Si no hay una posición del mouse, no hacer nada
+        
+        # Obtenemos la posición del mouse en el lienzo
+        mouse_x, mouse_y = self.mouse_pos.x(), self.mouse_pos.y()
+        print(f"Posición del mouse antes del zoom: ({mouse_x}, {mouse_y})")
+
+        # Calculamos el tamaño de la imagen escalada
+        scaled_width = self.lienzo.width() * self.zoom_factor
+        scaled_height = self.lienzo.height() * self.zoom_factor
+        print(f"Tamaño escalado después del zoom: ({scaled_width}, {scaled_height})")
+
+        # Calculamos el tamaño previo (con el zoom anterior)
+        prev_scaled_width = self.lienzo.width() * (self.zoom_factor - self.zoom_step)
+        prev_scaled_height = self.lienzo.height() * (self.zoom_factor - self.zoom_step)
+        print(f"Tamaño previo al zoom: ({prev_scaled_width}, {prev_scaled_height})")
+
+        # Calculamos el desplazamiento necesario para mantener la zona debajo del mouse
+        offset_x = (mouse_x * (scaled_width - prev_scaled_width)) / self.lienzo.width()
+        offset_y = (mouse_y * (scaled_height - prev_scaled_height)) / self.lienzo.height()
+
+        print(f"Desplazamiento calculado - offset_x: {offset_x}, offset_y: {offset_y}")
+
+        # Aplicamos el zoom centrado en el mouse
+        scaled_image = self.lienzo.scaled(self.lienzo.size() * self.zoom_factor,
+                                          Qt.AspectRatioMode.KeepAspectRatio,
+                                          Qt.TransformationMode.SmoothTransformation)
+
         self.etiqueta_lienzo.setPixmap(QPixmap.fromImage(scaled_image))
+
+        # Guardamos la posición de la vista después de hacer el zoom
+        self.previous_zoom_pos = (mouse_x - offset_x, mouse_y - offset_y)
+
+        # Calculamos las nuevas posiciones de la vista (mantenemos la posición relativa)
+        new_pos_x, new_pos_y = self.previous_zoom_pos
+
+        # Aseguramos que las nuevas posiciones no se desborden fuera del lienzo
+        new_pos_x = max(0, min(new_pos_x, scaled_width - self.lienzo.width()))
+        new_pos_y = max(0, min(new_pos_y, scaled_height - self.lienzo.height()))
+
+        print(f"Nueva posición de la imagen después del zoom: ({new_pos_x}, {new_pos_y})")
+
+        # Para mover la imagen con el desplazamiento calculado, usamos `QScrollArea`
+        self.scroll_area.horizontalScrollBar().setValue(int(new_pos_x))
+        self.scroll_area.verticalScrollBar().setValue(int(new_pos_y))
+
+        # Bloquear el zoom hasta el siguiente cambio de vista
+        self.zoom_locked = True
+
         self.update()  # Actualiza la ventana para reflejar los cambios
 
     def activar_seleccion(self, checked):
@@ -401,11 +507,11 @@ class LienzoDeDibujo(QMainWindow):
 
     def select_normal_brush(self):
         self.modo_pixel = False  # Desactiva el modo pixel
-        print("Modo Pincel Normal Activado")
+        print("Modo pincel normal activado")
 
     def select_pixel_brush(self):
         self.modo_pixel = True  # Activa el modo pixel
-        print("Modo Pincel Pixelado Activado")
+        print("Modo pincel pixelado Activado")
 
     def change_brush_size(self, value):
         self.tamaño_pincel = value
@@ -468,12 +574,12 @@ class LienzoDeDibujo(QMainWindow):
     def paintEvent(self, event):
         painter = QPainter(self)
 
-    def mouseMoveEvent(self, event):
-        if self.pincel_abajo:
-            current_point = event.position().toPoint()
-            self.draw_on_canvas(current_point)  # Llama a la función de dibujo en lugar de draw_line
-
     def mousePressEvent(self, event):
+        """Cuando se presiona el ratón, verificamos si se está dibujando"""
+        if self.zoom_locked:
+            # Si el zoom está bloqueado, no permitimos que se reestablezca la posición
+            return
+        
         if self.boton_rellenar.isChecked():
             start_pos = event.position().toPoint()
             fill_color = QColor(self.color_pincel)
@@ -481,10 +587,25 @@ class LienzoDeDibujo(QMainWindow):
         else:
             self.pincel_abajo = True
             self.ultimo_punto = event.position().toPoint()
+            # Guardamos la posición actual del mouse para asegurarnos que el zoom no cambie
+            self.mouse_pos = event.pos()  # Actualizamos la posición del mouse cuando se presiona el ratón
+
+    def mouseMoveEvent(self, event):
+        """Cuando se mueve el ratón, verificamos si estamos dibujando"""
+        self.set_mouse_position(event.pos())
+        if self.pincel_abajo:
+            current_point = event.position().toPoint()
+            self.draw_on_canvas(current_point)  # Llama a la función de dibujo en lugar de draw_line
 
     def mouseReleaseEvent(self, event):
+        """Cuando se suelta el ratón, desbloqueamos el zoom si es necesario"""
         self.pincel_abajo = False
         self.ultimo_punto = QPoint()
+        if self.zoom_locked:
+            self.zoom_locked = False  # Desbloqueamos el zoom después del trazo
+
+        # Si el zoom está bloqueado, no se vuelve a aplicar
+        super().mouseReleaseEvent(event)
 
     def update_canvas(self):
         """ Actualiza la visualización del lienzo con todas las capas. """
@@ -630,38 +751,32 @@ class LienzoDeDibujo(QMainWindow):
                 abs(color1.green() - color2.green()) <= self.tolerancia and
                 abs(color1.blue () - color2.blue()) <= self.tolerancia)
                 
-    def guardar_lienzo_dialog(self):
-        """ Abre un diálogo para seleccionar la ruta y el formato para guardar el lienzo. """
-        opciones = QFileDialog.Options()
-        ruta, _ = QFileDialog.getSaveFileName(self, "Guardar Lienzo", "", "Imágenes PNG (*.png);;Imágenes JPG (*.jpg)", options=opciones)
-        if ruta:
-            if ruta.endswith('.png'):
-                self.guardar_lienzo(ruta, "PNG")
-            elif ruta.endswith('.jpg'):
-                self.guardar_lienzo(ruta, "JPG")
-
-    def guardar_lienzo(self, ruta, formato):
+    def guardar_lienzo(self, ruta=None, formato="PNG"):
         """ Guarda el contenido del lienzo en un archivo en el formato especificado (PNG o JPG). """
-        # Renderizar el contenido del lienzo en un QImage
-        lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGB32)
-        lienzo_completo.fill(Qt.GlobalColor.transparent)  # Lienzo transparente
+        if ruta is None:
+            # Si no se pasa ruta, abre un cuadro de diálogo para elegir dónde guardar el archivo
+            ruta, _ = QFileDialog.getSaveFileName(self, "Guardar archivo", "", "Imagen PNG (*.png);;Imagen JPG (*.jpg)")
+        
+        if ruta:
+            # Renderizar el contenido del lienzo en un QImage
+            lienzo_completo = QImage(self.lienzo.size(), QImage.Format.Format_RGB32)
+            lienzo_completo.fill(Qt.GlobalColor.transparent)  # Lienzo transparente
 
-        painter = QPainter(lienzo_completo)
-        # No dibujes el fondo blanco aquí si quieres mantener la transparencia
-        self.etiqueta_lienzo.render(painter)
-        painter.end()
+            painter = QPainter(lienzo_completo)
+            self.etiqueta_lienzo.render(painter)
+            painter.end()
 
-        # Convertir el QImage a un formato que PIL pueda manejar y guardarlo
-        buffer = lienzo_completo.bits()
-        buffer.setsize(lienzo_completo.bytesPerLine() * lienzo_completo.height())  
-        data = buffer.asstring(lienzo_completo.bytesPerLine() * lienzo_completo.height())
+            # Convertir el QImage a un formato que PIL pueda manejar y guardarlo
+            buffer = lienzo_completo.bits()
+            buffer.setsize(lienzo_completo.bytesPerLine() * lienzo_completo.height())  
+            data = buffer.asstring(lienzo_completo.bytesPerLine() * lienzo_completo.height())
 
-        # Crear la imagen PIL a partir del buffer
-        pil_image = PILImage.frombuffer("RGBA", (lienzo_completo.width(), lienzo_completo.height()), data, "raw", "BGRA", 0, 1)
+            # Crear la imagen PIL a partir del buffer
+            pil_image = PILImage.frombuffer("RGBA", (lienzo_completo.width(), lienzo_completo.height()), data, "raw", "BGRA", 0, 1)
 
-        # Guardar la imagen usando Pillow
-        if formato == "PNG":
-            pil_image.save(ruta, format="PNG")  # Guardar como PNG, asegurando que la transparencia se conserve
-        elif formato == "JPEG":
-            pil_image = pil_image.convert("RGB")
-            pil_image.save(ruta, format="JPEG", quality=95)  # Ajusta la calidad según sea necesario
+            # Guardar la imagen usando Pillow
+            if formato == "PNG":
+                pil_image.save(ruta, format="PNG") 
+            elif formato == "JPEG":
+                pil_image = pil_image.convert("RGB")
+                pil_image.save(ruta, format="JPEG", quality=95)
