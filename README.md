@@ -54,12 +54,13 @@ Los siguientes archivos deben estar en la misma carpeta para ejecutar el proyect
 - Implementación de rueda de color.
 - Exportar en formatos de imagenes(Png y jpg)
 - Zoom
+- Atajos de teclado
 
 ## Próximos Avances
 
 - Nuevos modos de pincel (Vector).
-- Atajos de teclado
 - Deshacer y Rehacer
+- Importación de imagenes
 
 ---
 
