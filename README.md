@@ -24,7 +24,7 @@ Para ejecutar el código del proyecto, asegúrate de tener instalados los siguie
 
 - [Python](https://www.python.org/)
 - [PyQt6](https://pypi.org/project/PyQt6/) (Instalar con: `pip install pyqt6`)
-- [Pillow] (https://pypi.org/project/pillow/) (Instalar con: `pip install pillow`)
+- [Pillow](https://pypi.org/project/pillow/) (Instalar con: `pip install pillow`)
 
 ## Archivos del Proyecto
 
